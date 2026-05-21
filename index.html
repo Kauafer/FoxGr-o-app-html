@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>Fox360 · Venda de Grãos · Apresentação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: #1a1a17;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  /* Slide stage: scales 1920x1080 to fit viewport */
+  #stage-host {
+    position: fixed; inset: 0;
+    display: grid; place-items: center;
+    background: #1a1a17;
+  }
+  #stage-host #stage {
+    width: 1920px; height: 1080px;
+    transform-origin: center center;
+    position: relative;
+  }
+  .slide {
+    position: absolute; inset: 0;
+    width: 1920px; height: 1080px;
+    display: none;
+    background: #F5F4EE;
+  }
+  .slide.active { display: block; }
+
+  /* Nav */
+  .nav {
+    position: fixed; bottom: 20px; left: 50%;
+    transform: translateX(-50%); z-index: 1000;
+    background: rgba(0,0,0,0.55); color: #fff;
+    padding: 10px 18px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .nav button {
+    background: none; border: 0; color: #fff;
+    font-size: 18px; cursor: pointer; padding: 0;
+  }
+</style>
+</head>
+<body>
+
+<div id="stage-host"><div id="stage"></div></div>
+
+<div class="nav">
+  <button id="prev">‹</button>
+  <span id="counter">1 / 10</span>
+  <button id="next">›</button>
+</div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="fg-shared.jsx"></script>
+<script type="text/babel" src="fg-venda-classico.jsx"></script>
+<script type="text/babel" src="fox360-venda-deck.jsx"></script>
+
+<script>
+  // Scaling
+  function fitStage() {
+    const host = document.getElementById('stage-host');
+    const stage = document.getElementById('stage');
+    const w = window.innerWidth, h = window.innerHeight;
+    const scale = Math.min(w / 1920, h / 1080);
+    stage.style.transform = `scale(${scale})`;
+  }
+  window.addEventListener('resize', fitStage);
+
+  // Slide nav
+  let current = 0;
+  function getSlides() { return document.querySelectorAll('#stage .slide'); }
+  function goTo(n) {
+    const slides = getSlides();
+    if (!slides.length) return;
+    current = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, i) => s.classList.toggle('active', i === current));
+    document.getElementById('counter').textContent = `${current + 1} / ${slides.length}`;
+    window.parent.postMessage({ slideIndexChanged: current }, '*');
+  }
+  window.goTo = goTo;
+
+  document.getElementById('prev').addEventListener('click', () => goTo(current - 1));
+  document.getElementById('next').addEventListener('click', () => goTo(current + 1));
+  window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') goTo(current + 1);
+    if (e.key === 'ArrowLeft') goTo(current - 1);
+  });
+
+  // After React renders the slides, wrap them and init
+  const observer = new MutationObserver(() => {
+    const slides = document.querySelectorAll('#stage .slide');
+    if (slides.length) {
+      fitStage();
+      goTo(0);
+      document.getElementById('counter').textContent = `1 / ${slides.length}`;
+    }
+  });
+  observer.observe(document.getElementById('stage'), { childList: true, subtree: true });
+</script>
+
+</body>
+</html>
